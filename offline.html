@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Offline</title>
+		<style>
+			body {
+			  margin: 0;
+			  font-family: 'Segoe UI', sans-serif;
+			  background-color: #FFFFFF;
+			  color: #000000;
+			  display: flex;
+			  align-items: center;
+			  justify-content: center;
+			  flex-direction: column;
+			  height: 100vh;
+			  text-align: center;
+			  padding: 1rem;
+			}
+
+			.container {
+			  padding: 2rem;
+			}
+
+			h1 {
+			  font-size: 2rem;
+			  margin-bottom: 0.5rem;
+			}
+
+			p {
+			  font-size: 1rem;
+			  margin-bottom: 1rem;
+			}
+
+			.retry-button {
+			  background-color: #FF91A4;
+			  color: #FFFFFF;
+			  border: none;
+			  padding: 0.6rem 1.2rem;
+			  border-radius: 0.5rem;
+			  font-size: 1.4rem;
+			  cursor: pointer;
+			  margin-bottom: 1rem;
+			}
+
+			.retry-button:hover {
+			  background-color: #e67c8f;
+			}
+
+			canvas {
+			  background-color: #f2f2f2;
+			  border: 1px solid #ccc;
+			  border-radius: 0.5rem;
+			  touch-action: none;
+			}
+
+			#score {
+			  margin: 0.5rem 0 1rem 0;
+			  font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>You're Offline</h1>
+			<p>But hey, you can play a game while you're here 🎮</p>
+			<button class="retry-button" onclick="location.reload()">
+				Reconnect
+			</button>
+			<div id="score">Score: 0</div>
+			<canvas id="gameCanvas" width="300" height="400"></canvas>
+		</div>
+
+		<script>
+			const canvas = document.getElementById("gameCanvas");
+			const ctx = canvas.getContext("2d");
+			const scoreEl = document.getElementById("score");
+
+			const player = {
+				x: 130,
+				y: 370,
+				width: 40,
+				height: 10,
+				color: "#FF91A4",
+				speed: 5,
+			};
+
+			const dot = {
+				x: Math.random() * 280,
+				y: 0,
+				radius: 10,
+				color: "#FF91A4",
+				speed: 2,
+			};
+
+			let score = 0;
+			let keys = {};
+
+			document.addEventListener("keydown", (e) => (keys[e.key] = true));
+			document.addEventListener("keyup", (e) => (keys[e.key] = false));
+
+			// Mouse/touch movement
+			function setPlayerXFromEvent(evt) {
+				const rect = canvas.getBoundingClientRect();
+				const x = evt.touches ? evt.touches[0].clientX : evt.clientX;
+				const canvasX = x - rect.left;
+				player.x = canvasX - player.width / 2;
+				if (player.x < 0) player.x = 0;
+				if (player.x + player.width > canvas.width)
+					player.x = canvas.width - player.width;
+			}
+
+			canvas.addEventListener("mousemove", setPlayerXFromEvent);
+			canvas.addEventListener(
+				"touchmove",
+				(e) => {
+					e.preventDefault();
+					setPlayerXFromEvent(e);
+				},
+				{ passive: false }
+			);
+
+			function update() {
+				if (keys["ArrowLeft"]) player.x -= player.speed;
+				if (keys["ArrowRight"]) player.x += player.speed;
+
+				// Boundaries
+				if (player.x < 0) player.x = 0;
+				if (player.x + player.width > canvas.width)
+					player.x = canvas.width - player.width;
+
+				dot.y += dot.speed;
+
+				// Collision check
+				if (
+					dot.y + dot.radius > player.y &&
+					dot.x > player.x &&
+					dot.x < player.x + player.width
+				) {
+					score++;
+					scoreEl.textContent = `Score: ${score}`;
+					resetDot();
+				}
+
+				// Missed
+				if (dot.y > canvas.height) {
+					score = 0;
+					scoreEl.textContent = `Score: ${score}`;
+					resetDot();
+				}
+			}
+
+			function resetDot() {
+				dot.x = Math.random() * (canvas.width - 20) + 10;
+				dot.y = 0;
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+				// Draw player
+				ctx.fillStyle = player.color;
+				ctx.fillRect(player.x, player.y, player.width, player.height);
+
+				// Draw dot
+				ctx.beginPath();
+				ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+				ctx.fillStyle = dot.color;
+				ctx.fill();
+				ctx.closePath();
+			}
+
+			function loop() {
+				update();
+				draw();
+				requestAnimationFrame(loop);
+			}
+
+			loop();
+		</script>
+	</body>
+</html>
